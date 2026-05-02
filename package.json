@@ -50,6 +50,7 @@
   "devDependencies": {
     "@iconify/vue": "^5.0.0",
     "@vitejs/plugin-vue": "^6.0.5",
+    "blueimp-load-image": "^5.16.0",
     "eslint": "^10.1.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-vue": "^10.8.0",
@@ -59,7 +60,8 @@
     "vite": "^8.0.2",
     "vite-node": "^6.0.0",
     "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-static-copy": "^4.0.0"
+    "vite-plugin-static-copy": "^4.0.0",
+    "vue-cropper": "^1.1.4"
   },
   "engines": {
     "node": ">= 22"

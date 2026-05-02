@@ -5,6 +5,8 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import App from './App.vue';
 import 'normalize.css';
 import '@/styles/main.scss';
+import './assets/css/fontawesome.css';
+import './assets/css/solid.css';
 
 const app = createApp(App);
 
