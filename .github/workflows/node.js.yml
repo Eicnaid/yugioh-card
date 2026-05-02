@@ -35,7 +35,6 @@ jobs:
         cache: 'pnpm'
     - run: pnpm install
     - run: pnpm build
-    - run: pnpm build:lib
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
