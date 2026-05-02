@@ -32,5 +32,5 @@ jobs:
     - run: pnpm build:lib
     - uses: actions/upload-pages-artifact@v3
       with:
-        path: './dist'
+        path: './docs'
     - uses: actions/deploy-pages@v4
