@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => {
   const isLib = buildTarget === 'lib';
 
   return {
-    base: './',
+    base: '/yugioh-card/',
     publicDir: false,
     plugins: [
       vue(),
