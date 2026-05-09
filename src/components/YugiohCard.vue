@@ -1,811 +1,831 @@
 <template>
-  <div class="yugioh-card-container">
-    <div class="yugioh-card">
-      <div ref="card" class="card" />
-    </div>
-    <div class="form">
-      <div class="form-header">
-        <div class="form-title">
-          <span>游戏王卡片 - Yugioh Card</span>
-          <Icon
-            class="github-icon"
-            icon="ri:github-fill"
-            width="24"
-            height="24"
-            @click="toGithub"
-          />
-        </div>
-        <div class="form-description">
-          <span>一个使用 Canvas 渲染游戏王卡片的工具</span>
-        </div>
-      </div>
-
-      <div class="form-main">
-        <el-form :model="form" label-width="auto">
-          <el-row :gutter="gutter">
-            <el-col :span="20">
-              <el-form-item label="卡片">
-                <el-select
-                  v-model="form.card"
-                  placeholder="请选择卡片"
-                  @change="changeCard"
-                >
-                <el-option label="游戏王" value="yugioh" />
-                  <el-option label="超速决斗" value="rush-duel" />
-                  <el-option label="游戏王卡背" value="yugioh-back" />
-                  <el-option label="场地中心卡" value="field-center" />
-                  <el-option label="游戏王 2 期" value="yugioh-series-2" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="4">
-              <el-form-item label="UI">
-                <el-switch v-model="form.ui" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-          <div v-if="form.card === 'yugioh' && form.ui === true">
-            <el-form-item label="语言">
-              <el-select v-model="form.data.language" placeholder="请选择语言" @change="changeLanguageYugioh">
-                <el-option label="简体中文" value="sc" />
-                <el-option label="繁体中文" value="tc" />
-                <el-option label="日文" value="jp" />
-                <el-option label="韩文" value="kr" />
-                <el-option label="英文" value="en" />
-                <el-option label="星光界文" value="astral" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="卡名">
-              <el-input v-model="form.data.name" placeholder="请输入卡名" />
-            </el-form-item>
-            <el-form-item label="对齐">
-              <el-radio-group v-model="form.data.align">
-                <el-radio-button label="left">
-                  <i class="fa-solid fa-align-left" />
-                </el-radio-button>
-                <el-radio-button label="center">
-                  <i class="fa-solid fa-align-center" />
-                </el-radio-button>
-                <el-radio-button label="right">
-                  <i class="fa-solid fa-align-right" />
-                </el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="类型">
-              <el-radio-group v-model="form.data.type">
-               <el-radio-button label="monster">怪兽</el-radio-button>
-                <el-radio-button label="spell">魔法</el-radio-button>
-                <el-radio-button label="trap">陷阱</el-radio-button>
-                <el-radio-button label="pendulum">灵摆</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="属性">
-              <el-radio-group v-model="form.data.attribute" class="attribute-radio-group">
-                <el-radio-button label="dark">暗</el-radio-button>
-                <el-radio-button label="light">光</el-radio-button>
-                <el-radio-button label="earth">地</el-radio-button>
-                <el-radio-button label="water">水</el-radio-button>
-                <el-radio-button label="fire">炎</el-radio-button>
-                <el-radio-button label="wind">风</el-radio-button>
-                <el-radio-button label="divine">神</el-radio-button>
-                <el-radio-button label="">无</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item v-if="['spell','trap'].includes(form.data.type)" label="图标">
-              <el-select v-model="form.data.icon" placeholder="请选择图标" clearable>
-                <el-option label="装备" value="equip" />
-                <el-option label="场地" value="filed" />
-                <el-option label="速攻" value="quick-play" />
-                <el-option label="仪式" value="ritual" />
-                <el-option label="永续" value="continuous" />
-                <el-option label="反击" value="counter" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="图片">
-              <el-space :size="10">
-                <el-upload
-                  action="/"
-                  :show-file-list="false"
-                  accept="image/*"
-                  :before-upload="beforeUploadCard"
-                >
-                  <el-button type="primary">选择图片</el-button>
-                </el-upload>
-                <el-button plain @click="deleteImage">删除</el-button>
-              </el-space>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="卡类">
-              <el-select v-model="form.data.cardType" placeholder="请选择卡类">
-                <el-option label="通常" value="normal" />
-                <el-option label="效果" value="effect" />
-                <el-option label="仪式" value="ritual" />
-                <el-option label="融合" value="fusion" />
-                <el-option label="同调" value="synchro" />
-                <el-option label="超量" value="xyz" />
-                <el-option label="连接" value="link" />
-                <el-option label="衍生物" value="token" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'pendulum'" label="灵摆">
-              <el-select v-model="form.data.pendulumType" placeholder="请选择灵摆">
-                <el-option label="通常 / 灵摆" value="normal-pendulum" />
-                <el-option label="效果 / 灵摆" value="effect-pendulum" />
-                <el-option label="仪式 / 灵摆" value="ritual-pendulum" />
-                <el-option label="融合 / 灵摆" value="fusion-pendulum" />
-                <el-option label="同调 / 灵摆" value="synchro-pendulum" />
-                <el-option label="超量 / 灵摆" value="xyz-pendulum" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="(form.data.type === 'monster' && ['normal', 'effect', 'ritual', 'fusion', 'synchro', 'token'].includes(form.data.cardType)) || (form.data.type === 'pendulum' && ['normal-pendulum', 'effect-pendulum', 'ritual-pendulum', 'fusion-pendulum', 'synchro-pendulum'].includes(form.data.pendulumType))" label="星级">
-              <el-input-number
-                v-model="form.data.level"
-                :min="0"
-                :max="13"
-                :precision="0"
+    <div class="common-layout">
+      <el-container class="page-container">
+        <el-header class="page-header">
+          <el-space :size="10">
+            <span>游戏王卡片 - Yugioh Card</span>
+              <Icon
+                class="github-icon"
+                icon="ri:github-fill"
+                width="24"
+                height="24"
+                @click="toGithub"
               />
-            </el-form-item>
-            <el-form-item v-if="(form.data.type === 'monster' && form.data.cardType === 'xyz') || (form.data.type === 'pendulum' && form.data.pendulumType === 'xyz-pendulum')" label="阶级">
-              <el-input-number
-                v-model="form.data.rank"
-                :min="0"
-                :max="13"
-                :precision="0"
-              />
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'pendulum'" label="刻度">
-              <el-input-number
-                v-model="form.data.pendulumScale"
-                :min="0"
-                :max="13"
-                :precision="0"
-              />
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'pendulum'" label="灵摆效果" label-width="40px">
-              <el-input
-                v-model="form.data.pendulumDescription"
-                type="textarea"
-                :autosize="{minRows: 3}"
-                placeholder="请输入灵摆效果"
-              />
-            </el-form-item>
-            <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="种族">
-              <el-input v-model="form.data.monsterType" placeholder="请输入种族" />
-            </el-form-item>
-            <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="攻守">
-              <el-switch v-model="form.data.atkBar"/>
-            </el-form-item>
-            <el-form-item v-if="['monster','pendulum'].includes(form.data.type) && form.data.atkBar ===   true" label="ATK">
-              <el-input-number
-                v-model="form.data.atk"
-                :min="-2"
-                :max="9999"
-                :precision="0"
-              />
-              <span class="tip">（?：-1，∞：-2）</span>
-            </el-form-item>
-            <el-form-item v-if="(form.data.type === 'monster' && form.data.cardType !== 'link' && form.data.atkBar === true) || (form.data.type === 'pendulum' && form.data.atkBar === true)" label="DEF">
-              <el-input-number
-              v-model="form.data.def"
-                :min="-2"
-                :max="9999"
-                :precision="0"
-              />
-              <span class="tip">（?：-1，∞：-2）</span>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster' && form.data.cardType === 'link'" label="箭头">
-              <div class="arrow-form">
-                <div
-                  v-for="item in [8,1,2,7,9,3,6,5,4]"
-                  class="arrow-item"
-                  :style="arrowItemStyle(item)"
-                  @click="toggleArrow(item)"
-                >
-                  <i v-if="item === 1" class="fa-solid fa-up" />
-                  <i v-if="item === 2" class="fa-solid fa-up-right" />
-                  <i v-if="item === 3" class="fa-solid fa-right" />
-                  <i v-if="item === 4" class="fa-solid fa-down-right" />
-                  <i v-if="item === 5" class="fa-solid fa-down" />
-                  <i v-if="item === 6" class="fa-solid fa-down-left" />
-                  <i v-if="item === 7" class="fa-solid fa-left" />
-                  <i v-if="item === 8" class="fa-solid fa-up-left" />
-                </div>
+            <span>一个使用 Canvas 渲染游戏王卡片的工具</span>
+          </el-space>
+          <div style="margin-left: auto; padding: 10px;">
+            <el-button type="primary" @click="showSidebar = !showSidebar">
+              <i :class="['fas', showSidebar ? 'fa-right-to-line' : 'fa-left-to-line']" />
+            </el-button>
+          </div>
+        </el-header>
+        <el-container class="main-container">
+          <el-main class="main-content">
+            <div class="yugioh-card-container">
+              <div class="yugioh-card">
+                <div ref="card" class="card" />
               </div>
-            </el-form-item>
-            <el-form-item label="效果">
-              <el-row :gutter="gutter">
-              <el-col :span="12">
-                <el-switch v-model="form.data.firstLineCompress" active-text="首行压缩" />
-              </el-col>
-              <el-col :span="12">
-                <el-switch v-model="form.data.descriptionAlign" active-text="文本居中" />
-              </el-col>
-            </el-row>
-              <el-input
-                v-model="form.data.description"
-                style="margin-top: 10px"
-                type="textarea"
-                :autosize="{minRows: 3}"
-                placeholder="请输入效果"
-              />
-            </el-form-item>
-            <el-form-item label="字号">
-              <el-slider
-                v-model="form.data.descriptionZoom"
-                :min="0.5"
-                :max="1.5"
-                :step="0.02"
-                :marks="descriptionZoomMarks"
-              />
-            </el-form-item>
-            <el-form-item label="卡包">
-              <el-input v-model="form.data.package" placeholder="请输入卡包" />
-            </el-form-item>
-            <el-form-item label="密码">
-                <el-input v-model="form.data.password" placeholder="请输入密码" />
-            </el-form-item>
-            <el-form-item label="版权">
-              <el-select
-                v-model="form.data.copyright"
-                placeholder="请选择版权"
-                clearable
-                fit-input-width
-              >
-                <el-option label="©2020 Studio Dice/SHUEISHA, TV TOKYO, KONAMI" value="sc" />
-                <el-option label="©スタジオ・ダイス/集英社・テレビ東京・KONAMI" value="jp" />
-                <el-option label="©1996 KAZUKI TAKAHASHI" value="en" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="罕贵">
-              <el-select
-                v-model="form.data.rare"
-                placeholder="请选择罕贵"
-                clearable
-              >
-                <el-option label="DT" value="dt" />
-                <el-option label="UR" value="ur" />
-                <el-option label="GR" value="gr" />
-                <el-option label="HR" value="hr" />
-                <el-option label="SER" value="ser" />
-                <el-option label="GSER" value="gser" />
-                <el-option label="PSER" value="pser" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="角标">
-              <el-select
-                v-model="form.data.laser"
-                placeholder="请选择角标"
-                clearable
-              >
-                <el-option label="样式一" value="laser1" />
-                <el-option label="样式二" value="laser2" />
-                <el-option label="样式三" value="laser3" />
-                <el-option label="样式四" value="laser4" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="    ">
-              <el-row :gutter="gutter">
-                <el-col :span="12">
-                  <el-switch v-model="form.data.radius" active-text="圆角"/>
-                </el-col>
-                <el-col :span="12">
-                  <el-switch v-model="form.data.twentieth" active-text="20th"/>
-                </el-col>
-              </el-row>
-            </el-form-item>
-            <el-form-item label="缩放">
-              <el-slider
-                v-model="form.data.scale"
-                :min="0.1"
-                :max="1"
-                :step="0.1"
-             />
-            </el-form-item>
-          </div>
+            </div>
+          </el-main>
+          <el-aside 
+            :width="showSidebar ? asideWidth : '0px'" 
+            style="transition: width 0.3s; overflow: hidden;"
+          >
+          <div 
+            class="yugioh-card-container"
+            :style="asideContainerStyle"
+          >
+            <div class="form">
+              <div class="form-main">
+                <el-form :model="form" label-width="auto">
+                  <el-row :gutter="gutter">
+                    <el-col :span="20">
+                      <el-form-item label="卡片">
+                        <el-select
+                          v-model="form.card"
+                          placeholder="请选择卡片"
+                          @change="changeCard"
+                        >
+                        <el-option label="游戏王" value="yugioh" />
+                          <el-option label="超速决斗" value="rush-duel" />
+                          <el-option label="游戏王卡背" value="yugioh-back" />
+                          <el-option label="场地中心卡" value="field-center" />
+                          <el-option label="游戏王 2 期" value="yugioh-series-2" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="UI">
+                        <el-switch v-model="form.ui" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
 
-          <div v-if="form.card === 'rush-duel' && form.ui === true">
-            <el-form-item label="语言">
-              <el-select v-model="form.data.language" placeholder="请选择语言" @change="changeLanguageRushDuel">
-                <el-option label="简体中文" value="sc" />
-                <el-option label="日文" value="jp" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="卡名">
-              <el-input v-model="form.data.name" placeholder="请输入卡名" />
-            </el-form-item>
-            <el-form-item label="颜色">
-              <el-color-picker v-model="form.data.color" />
-              <span class="tip">（自动选择清空）</span>
-            </el-form-item>
-            <el-form-item label="类型">
-              <el-radio-group v-model="form.data.type">
-                <el-radio-button label="monster">怪兽</el-radio-button>
-                <el-radio-button label="spell">魔法</el-radio-button>
-                <el-radio-button label="trap">陷阱</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="属性">
-              <el-radio-group v-model="form.data.attribute" class="attribute-radio-group">
-                <el-radio-button label="dark">暗</el-radio-button>
-                <el-radio-button label="light">光</el-radio-button>
-                <el-radio-button label="earth">地</el-radio-button>
-                <el-radio-button label="water">水</el-radio-button>
-                <el-radio-button label="fire">炎</el-radio-button>
-                <el-radio-button label="wind">风</el-radio-button>
-                <el-radio-button label="divine">神</el-radio-button>
-                <el-radio-button label="">无</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item v-if="['spell','trap'].includes(form.data.type)" label="图标">
-              <el-select v-model="form.data.icon" placeholder="请选择图标" clearable>
-                <el-option label="装备" value="equip" />
-                <el-option label="场地" value="filed" />
-                <el-option label="速攻" value="quick-play" />
-                <el-option label="仪式" value="ritual" />
-                <el-option label="永续" value="continuous" />
-                <el-option label="反击" value="counter" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="图片">
-              <el-space :size="10">
-                <el-upload
-                  action="/"
-                  :show-file-list="false"
-                  accept="image/*"
-                  :before-upload="beforeUploadCard"
+                  <div v-if="form.card === 'yugioh' && form.ui === true">
+                    <el-form-item label="语言">
+                      <el-select v-model="form.data.language" placeholder="请选择语言" @change="changeLanguageYugioh">
+                        <el-option label="简体中文" value="sc" />
+                        <el-option label="繁体中文" value="tc" />
+                        <el-option label="日文" value="jp" />
+                        <el-option label="韩文" value="kr" />
+                        <el-option label="英文" value="en" />
+                        <el-option label="星光界文" value="astral" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="卡名">
+                      <el-input v-model="form.data.name" placeholder="请输入卡名" />
+                    </el-form-item>
+                    <el-form-item label="对齐">
+                      <el-radio-group v-model="form.data.align">
+                        <el-radio-button label="left">
+                          <i class="fa-solid fa-align-left" />
+                        </el-radio-button>
+                        <el-radio-button label="center">
+                          <i class="fa-solid fa-align-center" />
+                        </el-radio-button>
+                        <el-radio-button label="right">
+                          <i class="fa-solid fa-align-right" />
+                        </el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item label="类型">
+                      <el-radio-group v-model="form.data.type">
+                       <el-radio-button label="monster">怪兽</el-radio-button>
+                        <el-radio-button label="spell">魔法</el-radio-button>
+                        <el-radio-button label="trap">陷阱</el-radio-button>
+                        <el-radio-button label="pendulum">灵摆</el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="属性">
+                      <el-radio-group v-model="form.data.attribute" class="attribute-radio-group">
+                        <el-radio-button label="dark">暗</el-radio-button>
+                        <el-radio-button label="light">光</el-radio-button>
+                        <el-radio-button label="earth">地</el-radio-button>
+                        <el-radio-button label="water">水</el-radio-button>
+                        <el-radio-button label="fire">炎</el-radio-button>
+                        <el-radio-button label="wind">风</el-radio-button>
+                        <el-radio-button label="divine">神</el-radio-button>
+                        <el-radio-button label="">无</el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item v-if="['spell','trap'].includes(form.data.type)" label="图标">
+                      <el-select v-model="form.data.icon" placeholder="请选择图标" clearable>
+                        <el-option label="装备" value="equip" />
+                        <el-option label="场地" value="filed" />
+                        <el-option label="速攻" value="quick-play" />
+                        <el-option label="仪式" value="ritual" />
+                        <el-option label="永续" value="continuous" />
+                        <el-option label="反击" value="counter" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="图片">
+                      <el-space :size="10">
+                        <el-upload
+                          action="/"
+                          :show-file-list="false"
+                          accept="image/*"
+                          :before-upload="beforeUploadCard"
+                        >
+                          <el-button type="primary">选择图片</el-button>
+                        </el-upload>
+                        <el-button plain @click="deleteImage">删除</el-button>
+                      </el-space>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="卡类">
+                      <el-select v-model="form.data.cardType" placeholder="请选择卡类">
+                        <el-option label="通常" value="normal" />
+                        <el-option label="效果" value="effect" />
+                        <el-option label="仪式" value="ritual" />
+                        <el-option label="融合" value="fusion" />
+                        <el-option label="同调" value="synchro" />
+                        <el-option label="超量" value="xyz" />
+                        <el-option label="连接" value="link" />
+                        <el-option label="衍生物" value="token" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'pendulum'" label="灵摆">
+                      <el-select v-model="form.data.pendulumType" placeholder="请选择灵摆">
+                        <el-option label="通常 / 灵摆" value="normal-pendulum" />
+                        <el-option label="效果 / 灵摆" value="effect-pendulum" />
+                        <el-option label="仪式 / 灵摆" value="ritual-pendulum" />
+                        <el-option label="融合 / 灵摆" value="fusion-pendulum" />
+                        <el-option label="同调 / 灵摆" value="synchro-pendulum" />
+                        <el-option label="超量 / 灵摆" value="xyz-pendulum" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item v-if="(form.data.type === 'monster' && ['normal', 'effect', 'ritual', 'fusion', 'synchro', 'token'].includes(form.data.cardType)) || (form.data.type === 'pendulum' && ['normal-pendulum', 'effect-pendulum', 'ritual-pendulum', 'fusion-pendulum', 'synchro-pendulum'].includes(form.data.pendulumType))" label="星级">
+                      <el-input-number
+                        v-model="form.data.level"
+                        :min="0"
+                        :max="13"
+                        :precision="0"
+                      />
+                    </el-form-item>
+                    <el-form-item v-if="(form.data.type === 'monster' && form.data.cardType === 'xyz') || (form.data.type === 'pendulum' && form.data.pendulumType === 'xyz-pendulum')" label="阶级">
+                      <el-input-number
+                        v-model="form.data.rank"
+                        :min="0"
+                        :max="13"
+                        :precision="0"
+                      />
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'pendulum'" label="刻度">
+                      <el-input-number
+                        v-model="form.data.pendulumScale"
+                        :min="0"
+                        :max="13"
+                        :precision="0"
+                      />
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'pendulum'" label="灵摆效果" label-width="40px">
+                      <el-input
+                        v-model="form.data.pendulumDescription"
+                        type="textarea"
+                        :autosize="{minRows: 3}"
+                        placeholder="请输入灵摆效果"
+                      />
+                    </el-form-item>
+                    <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="种族">
+                      <el-input v-model="form.data.monsterType" placeholder="请输入种族" />
+                    </el-form-item>
+                    <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="攻守">
+                      <el-switch v-model="form.data.atkBar"/>
+                    </el-form-item>
+                    <el-form-item v-if="['monster','pendulum'].includes(form.data.type) && form.data.atkBar === true" label="ATK">
+                      <el-input-number
+                        v-model="form.data.atk"
+                        :min="-2"
+                        :max="9999"
+                        :precision="0"
+                      />
+                      <span class="tip">（?：-1，∞：-2）</span>
+                    </el-form-item>
+                    <el-form-item v-if="(form.data.type === 'monster' && form.data.cardType !== 'link' && form.data.atkBar === true) || (form.data.type === 'pendulum' && form.data.atkBar === true)" label="DEF">
+                      <el-input-number
+                      v-model="form.data.def"
+                        :min="-2"
+                        :max="9999"
+                        :precision="0"
+                      />
+                      <span class="tip">（?：-1，∞：-2）</span>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster' && form.data.cardType === 'link'" label="箭头">
+                      <div class="arrow-form">
+                        <div
+                          v-for="item in [8,1,2,7,9,3,6,5,4]"
+                          class="arrow-item"
+                          :style="arrowItemStyle(item)"
+                          @click="toggleArrow(item)"
+                        >
+                          <i v-if="item === 1" class="fa-solid fa-up" />
+                          <i v-if="item === 2" class="fa-solid fa-up-right" />
+                          <i v-if="item === 3" class="fa-solid fa-right" />
+                          <i v-if="item === 4" class="fa-solid fa-down-right" />
+                          <i v-if="item === 5" class="fa-solid fa-down" />
+                          <i v-if="item === 6" class="fa-solid fa-down-left" />
+                          <i v-if="item === 7" class="fa-solid fa-left" />
+                          <i v-if="item === 8" class="fa-solid fa-up-left" />
+                        </div>
+                      </div>
+                    </el-form-item>
+                    <el-form-item label="效果">
+                      <el-row :gutter="gutter">
+                        <el-col :span="12">
+                         <el-switch v-model="form.data.firstLineCompress" active-text="首行压缩" />
+                        </el-col>
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.descriptionAlign" active-text="文本居中" />
+                        </el-col>
+                      </el-row>
+                      <el-input
+                        v-model="form.data.description"
+                        style="margin-top: 10px"
+                        type="textarea"
+                        :autosize="{minRows: 3}"
+                        placeholder="请输入效果"
+                      />
+                    </el-form-item>
+                    <el-form-item label="字号">
+                      <el-slider
+                        v-model="form.data.descriptionZoom"
+                        :min="0.5"
+                        :max="1.5"
+                        :step="0.02"
+                        :marks="descriptionZoomMarks"
+                      />
+                    </el-form-item>
+                    <el-form-item label="卡包">
+                      <el-input v-model="form.data.package" placeholder="请输入卡包" />
+                    </el-form-item>
+                    <el-form-item label="密码">
+                      <el-input v-model="form.data.password" placeholder="请输入密码" />
+                    </el-form-item>
+                    <el-form-item label="版权">
+                      <el-select
+                        v-model="form.data.copyright"
+                        placeholder="请选择版权"
+                        clearable
+                        fit-input-width
+                      >
+                        <el-option label="©2020 Studio Dice/SHUEISHA, TV TOKYO, KONAMI" value="sc" />
+                        <el-option label="©スタジオ・ダイス/集英社・テレビ東京・KONAMI" value="jp" />
+                        <el-option label="©1996 KAZUKI TAKAHASHI" value="en" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="罕贵">
+                      <el-select
+                        v-model="form.data.rare"
+                        placeholder="请选择罕贵"
+                        clearable
+                      >
+                        <el-option label="DT" value="dt" />
+                        <el-option label="UR" value="ur" />
+                        <el-option label="GR" value="gr" />
+                        <el-option label="HR" value="hr" />
+                        <el-option label="SER" value="ser" />
+                        <el-option label="GSER" value="gser" />
+                        <el-option label="PSER" value="pser" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="角标">
+                      <el-select
+                        v-model="form.data.laser"
+                        placeholder="请选择角标"
+                        clearable
+                      >
+                        <el-option label="样式一" value="laser1" />
+                        <el-option label="样式二" value="laser2" />
+                        <el-option label="样式三" value="laser3" />
+                        <el-option label="样式四" value="laser4" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="    ">
+                      <el-row :gutter="gutter">
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.radius" active-text="圆角"/>
+                        </el-col>
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.twentieth" active-text="20th"/>
+                        </el-col>
+                      </el-row>
+                    </el-form-item>
+                    <el-form-item label="缩放">
+                      <el-slider
+                        v-model="form.data.scale"
+                        :min="0.1"
+                        :max="1"
+                        :step="0.1"
+                       />
+                    </el-form-item>
+                  </div>
+
+                  <div v-if="form.card === 'rush-duel' && form.ui === true">
+                    <el-form-item label="语言">
+                      <el-select v-model="form.data.language" placeholder="请选择语言" @change="changeLanguageRushDuel">
+                        <el-option label="简体中文" value="sc" />
+                        <el-option label="日文" value="jp" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="卡名">
+                      <el-input v-model="form.data.name" placeholder="请输入卡名" />
+                    </el-form-item>
+                    <el-form-item label="颜色">
+                      <el-color-picker v-model="form.data.color" />
+                      <span class="tip">（自动选择清空）</span>
+                    </el-form-item>
+                    <el-form-item label="类型">
+                      <el-radio-group v-model="form.data.type">
+                        <el-radio-button label="monster">怪兽</el-radio-button>
+                        <el-radio-button label="spell">魔法</el-radio-button>
+                        <el-radio-button label="trap">陷阱</el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="属性">
+                      <el-radio-group v-model="form.data.attribute" class="attribute-radio-group">
+                        <el-radio-button label="dark">暗</el-radio-button>
+                        <el-radio-button label="light">光</el-radio-button>
+                        <el-radio-button label="earth">地</el-radio-button>
+                        <el-radio-button label="water">水</el-radio-button>
+                        <el-radio-button label="fire">炎</el-radio-button>
+                        <el-radio-button label="wind">风</el-radio-button>
+                        <el-radio-button label="divine">神</el-radio-button>
+                        <el-radio-button label="">无</el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item v-if="['spell','trap'].includes(form.data.type)" label="图标">
+                      <el-select v-model="form.data.icon" placeholder="请选择图标" clearable>
+                        <el-option label="装备" value="equip" />
+                        <el-option label="场地" value="filed" />
+                        <el-option label="速攻" value="quick-play" />
+                        <el-option label="仪式" value="ritual" />
+                        <el-option label="永续" value="continuous" />
+                        <el-option label="反击" value="counter" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="图片">
+                      <el-space :size="10">
+                        <el-upload
+                          action="/"
+                          :show-file-list="false"
+                          accept="image/*"
+                          :before-upload="beforeUploadCard"
+                        >
+                          <el-button type="primary">选择图片</el-button>
+                        </el-upload>
+                        <el-button plain @click="deleteImage">删除</el-button>
+                      </el-space>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="卡类">
+                      <el-select v-model="form.data.cardType" placeholder="请选择卡类">
+                        <el-option label="通常" value="normal" />
+                        <el-option label="效果" value="effect" />
+                        <el-option label="仪式" value="ritual" />
+                        <el-option label="融合" value="fusion" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item v-if="(form.data.type === 'monster' && ['normal', 'effect', 'ritual', 'fusion', 'synchro', 'token'].includes(form.data.cardType)) || (form.data.type === 'pendulum' && ['normal-pendulum', 'effect-pendulum', 'ritual-pendulum', 'fusion-pendulum', 'synchro-pendulum'].includes(form.data.pendulumType))" label="星级">
+                      <el-input-number
+                        v-model="form.data.level"
+                        :min="0"
+                        :max="13"
+                        :precision="0"
+                      />
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="种族">
+                      <el-input v-model="form.data.monsterType" placeholder="请输入种族" />
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="MAX">
+                      <el-input-number
+                        v-model="form.data.maximumAtk"
+                        :min="0"
+                        :max="9999"
+                        :precision="0"
+                      />
+                      <span class="tip">（MAXIMUM ATK）</span>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="ATK">
+                      <el-input-number
+                        v-model="form.data.atk"
+                        :min="-1"
+                        :max="9999"
+                        :precision="0"
+                      />
+                      <span class="tip">（?：-1）</span>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="DEF">
+                      <el-input-number
+                        v-model="form.data.def"
+                        :min="-1"
+                        :max="9999"
+                        :precision="0"
+                      />
+                      <span class="tip">（?：-1）</span>
+                    </el-form-item>
+                    <el-form-item label="效果">
+                      <el-row :gutter="gutter">
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.firstLineCompress" active-text="首行压缩" />
+                        </el-col>
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.descriptionAlign" active-text="文本居中" />
+                        </el-col>
+                      </el-row>
+                      <el-input
+                        v-model="form.data.description"
+                        style="margin-top: 10px"
+                        type="textarea"
+                        :autosize="{minRows: 3}"
+                        placeholder="请输入效果"
+                      />
+                    </el-form-item>
+                    <el-form-item label="字号">
+                      <el-slider
+                        v-model="form.data.descriptionZoom"
+                        :min="0.5"
+                        :max="1.5"
+                        :step="0.02"
+                        :marks="descriptionZoomMarks"
+                      />
+                    </el-form-item>
+                    <el-form-item label="卡包">
+                      <el-input v-model="form.data.package" placeholder="请输入卡包" />
+                    </el-form-item>
+                    <el-form-item label="密码">
+                      <el-input v-model="form.data.password" placeholder="请输入密码" />
+                    </el-form-item>
+                    <el-form-item label="罕贵">
+                      <el-select
+                        v-model="form.data.rare"
+                        placeholder="请选择罕贵"
+                        clearable
+                      >
+                        <el-option label="SR" value="sr" />
+                        <el-option label="RR" value="rr" />
+                        <el-option label="PSER" value="pser" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="角标">
+                      <el-select
+                        v-model="form.data.laser"
+                        placeholder="请选择角标"
+                        clearable
+                      >
+                        <el-option label="样式一" value="laser1" />
+                        <el-option label="样式二" value="laser2" />
+                        <el-option label="样式三" value="laser3" />
+                        <el-option label="样式四" value="laser4" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="    ">
+                      <el-row :gutter="gutter">
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.radius" active-text="圆角"/>
+                        </el-col>
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.legend" active-text="传说"/>
+                        </el-col>
+                      </el-row>
+                    </el-form-item>
+                    <el-form-item label="缩放">
+                      <el-slider
+                        v-model="form.data.scale"
+                        :min="0.1"
+                        :max="1"
+                        :step="0.1"
+                      />
+                    </el-form-item>
+                  </div>
+
+                  <div v-if="form.card === 'yugioh-back' && form.ui === true">
+                    <el-form-item label="类型">
+                      <el-select
+                        v-model="form.data.type"
+                        placeholder="请选择类型"
+                      >
+                        <el-option label="通常" value="normal" />
+                        <el-option label="巨神兵" value="tormentor" />
+                        <el-option label="天空龙" value="sky-dragon" />
+                        <el-option label="翼神龙" value="winged-dragon" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="标志">
+                      <el-select
+                        v-model="form.data.logo"
+                        placeholder="请选择标志"
+                        clearable
+                      >
+                        <el-option label="OCG" value="ocg" />
+                        <el-option label="TCG" value="tcg" />
+                        <el-option label="RD" value="rd" />
+                      </el-select>
+                    </el-form-item>
+                    <el-row :gutter="gutter">
+                      <el-col :span="8">
+                        <el-form-item label="圆角">
+                          <el-switch v-model="form.data.radius" />
+                        </el-form-item>
+                      </el-col>
+                      <el-col :span="8">
+                        <el-form-item label="K标">
+                          <el-switch v-model="form.data.konami" />
+                        </el-form-item>
+                      </el-col>
+                      <el-col :span="8">
+                        <el-form-item label="R标">
+                          <el-switch v-model="form.data.register" />
+                        </el-form-item>
+                      </el-col>
+                    </el-row>
+                    <el-form-item label="缩放">
+                      <el-slider
+                        v-model="form.data.scale"
+                        :min="0.1"
+                        :max="1"
+                        :step="0.1"
+                      />
+                    </el-form-item>
+                  </div>
+
+                  <div v-if="form.card === 'field-center' && form.ui === true">
+                    <el-form-item label="图片">
+                      <el-space :size="10">
+                        <el-upload
+                          action="/"
+                          :show-file-list="false"
+                          accept="image/*"
+                          :before-upload="beforeUploadCenter"
+                        >
+                          <el-button type="primary">选择图片</el-button>
+                        </el-upload>
+                        <el-button plain @click="deleteImage">删除</el-button>
+                      </el-space>
+                    </el-form-item>
+                    <el-row :gutter="gutter">
+                      <el-col :span="12">
+                        <el-form-item label="圆角">
+                          <el-switch v-model="form.data.radius" />
+                        </el-form-item>
+                      </el-col>
+                      <el-col :span="12">
+                        <el-form-item label="卡背">
+                          <el-switch v-model="form.data.cardBack" />
+                        </el-form-item>
+                      </el-col>
+                    </el-row>
+                    <el-form-item label="缩放">
+                      <el-slider
+                        v-model="form.data.scale"
+                        :min="0.1"
+                        :max="1"
+                        :step="0.1"
+                      />
+                    </el-form-item>
+                  </div>
+
+                  <div v-if="form.card === 'yugioh-series-2' && form.ui === true">
+                    <el-form-item label="卡名">
+                      <el-input v-model="form.data.name" placeholder="请输入卡名" />
+                    </el-form-item>
+                    <el-form-item label="对齐">
+                      <el-radio-group v-model="form.data.align">
+                        <el-radio-button label="left">
+                          <i class="fa-solid fa-align-left" />
+                        </el-radio-button>
+                        <el-radio-button label="center">
+                          <i class="fa-solid fa-align-center" />
+                        </el-radio-button>
+                        <el-radio-button label="right">
+                          <i class="fa-solid fa-align-right" />
+                        </el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item label="类型">
+                      <el-radio-group v-model="form.data.type">
+                       <el-radio-button label="monster">怪兽</el-radio-button>
+                        <el-radio-button label="spell">魔法</el-radio-button>
+                        <el-radio-button label="trap">陷阱</el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="属性">
+                      <el-radio-group v-model="form.data.attribute" class="attribute-radio-group">
+                        <el-radio-button label="dark">暗</el-radio-button>
+                        <el-radio-button label="light">光</el-radio-button>
+                        <el-radio-button label="earth">地</el-radio-button>
+                        <el-radio-button label="water">水</el-radio-button>
+                        <el-radio-button label="fire">炎</el-radio-button>
+                        <el-radio-button label="wind">风</el-radio-button>
+                        <el-radio-button label="divine">神</el-radio-button>
+                        <el-radio-button label="">无</el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                    <el-form-item v-if="['spell','trap'].includes(form.data.type)" label="图标">
+                      <el-select v-model="form.data.icon" placeholder="请选择图标" clearable>
+                        <el-option label="装备" value="equip" />
+                        <el-option label="场地" value="filed" />
+                        <el-option label="速攻" value="quick-play" />
+                        <el-option label="仪式" value="ritual" />
+                        <el-option label="永续" value="continuous" />
+                        <el-option label="反击" value="counter" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="图片">
+                      <el-space :size="10">
+                        <el-upload
+                          action="/"
+                          :show-file-list="false"
+                          accept="image/*"
+                          :before-upload="beforeUploadCard"
+                        >
+                          <el-button type="primary">选择图片</el-button>
+                        </el-upload>
+                        <el-button plain @click="deleteImage">删除</el-button>
+                      </el-space>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="卡类">
+                      <el-select v-model="form.data.cardType" placeholder="请选择卡类">
+                        <el-option label="通常" value="normal" />
+                        <el-option label="效果" value="effect" />
+                        <el-option label="仪式" value="ritual" />
+                        <el-option label="融合" value="fusion" />
+                        <el-option label="巨神兵" value="tormentor" />
+                        <el-option label="天空龙" value="sky-dragon" />
+                        <el-option label="翼神龙" value="winged-dragon" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="星级">
+                      <el-input-number
+                        v-model="form.data.level"
+                        :min="0"
+                        :max="12"
+                        :precision="0"
+                      />
+                    </el-form-item>
+                    <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="种族">
+                      <el-input v-model="form.data.monsterType" placeholder="请输入种族" />
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="ATK">
+                      <el-input-number
+                        v-model="form.data.atk"
+                        :min="-2"
+                        :max="9999"
+                        :precision="0"
+                      />
+                      <span class="tip">（?：-1，∞：-2）</span>
+                    </el-form-item>
+                    <el-form-item v-if="form.data.type === 'monster'" label="DEF">
+                      <el-input-number
+                      v-model="form.data.def"
+                        :min="-2"
+                        :max="9999"
+                        :precision="0"
+                      />
+                      <span class="tip">（?：-1，∞：-2）</span>
+                    </el-form-item>
+                    <el-form-item label="效果">
+                      <el-row :gutter="gutter">
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.firstLineCompress" active-text="首行压缩" />
+                        </el-col>
+                        <el-col :span="12">
+                          <el-switch v-model="form.data.descriptionAlign" active-text="文本居中" />
+                        </el-col>
+                      </el-row>
+                      <el-input
+                        v-model="form.data.description"
+                        style="margin-top: 10px"
+                        type="textarea"
+                        :autosize="{minRows: 3}"
+                        placeholder="请输入效果"
+                      />
+                    </el-form-item>
+                    <el-form-item label="字号">
+                      <el-slider
+                        v-model="form.data.descriptionZoom"
+                        :min="0.5"
+                        :max="1.5"
+                        :step="0.02"
+                        :marks="descriptionZoomMarks"
+                      />
+                    </el-form-item>
+                    <el-form-item label="卡包">
+                      <el-input v-model="form.data.package" placeholder="请输入卡包" />
+                    </el-form-item>
+                    <el-form-item label="密码">
+                        <el-input v-model="form.data.password" placeholder="请输入密码" />
+                    </el-form-item>
+                    <el-form-item label="版权">
+                      <el-select
+                        v-model="form.data.copyright"
+                        placeholder="请选择版权"
+                        clearable
+                        fit-input-width
+                      >
+                        <el-option label="©スタジオ・ダイス/集英社・テレビ東京・KONAMI" value="jp" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="角标">
+                      <el-select
+                        v-model="form.data.laser"
+                        placeholder="请选择角标"
+                        clearable
+                      >
+                        <el-option label="样式一" value="laser1" />
+                        <el-option label="样式二" value="laser2" />
+                        <el-option label="样式三" value="laser3" />
+                        <el-option label="样式四" value="laser4" />
+                      </el-select>
+                    </el-form-item>
+                    <el-row :gutter="gutter">
+                      <el-col :span="12">
+                        <el-form-item label="圆角">
+                          <el-switch v-model="form.data.radius" />
+                        </el-form-item>
+                      </el-col>
+                      <el-col :span="12">
+                        <el-form-item label="20th">
+                          <el-switch v-model="form.data.twentieth" />
+                        </el-form-item>
+                      </el-col>
+                    </el-row>
+                    <el-form-item label="缩放">
+                      <el-slider
+                        v-model="form.data.scale"
+                        :min="0.1"
+                        :max="1"
+                        :step="0.1"
+                     />
+                    </el-form-item>
+                  </div>
+
+                  <el-form-item v-if="form.ui === false" label="数据">
+                    <json-editor-vue
+                      v-model="jsonData"
+                      style="width: 100%"
+                      mode="text"
+                      v-bind="jsonOption"
+                    />
+                  </el-form-item>
+                </el-form>
+
+                <div class="button-group">
+                  <el-row :gutter="gutter">
+                      <el-col :span="12">
+                        <el-upload
+                          action="/"
+                          :show-file-list="false"
+                          accept="application/json"
+                          :before-upload="importJson"
+                        >
+                          <el-button plain>导入数据</el-button>
+                        </el-upload>
+                      </el-col>
+                      <el-col :span="12">
+                        <el-button plain @click="exportJson">导出数据</el-button>
+                      </el-col>
+                    <el-button type="primary" @click="exportImage">导出图片</el-button>
+                  </el-row>
+                </div>
+
+                <el-dialog
+                  v-model="CropperDialog.show"
+                  title="图片裁切"
+                  :width="800"
+                  :close-on-click-modal="false"
+                  :close-on-press-escape="false"
+                  :show-close="false"
                 >
-                  <el-button type="primary">选择图片</el-button>
-                </el-upload>
-                <el-button plain @click="deleteImage">删除</el-button>
-              </el-space>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="卡类">
-              <el-select v-model="form.data.cardType" placeholder="请选择卡类">
-                <el-option label="通常" value="normal" />
-                <el-option label="效果" value="effect" />
-                <el-option label="仪式" value="ritual" />
-                <el-option label="融合" value="fusion" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="(form.data.type === 'monster' && ['normal', 'effect', 'ritual', 'fusion', 'synchro', 'token'].includes(form.data.cardType)) || (form.data.type === 'pendulum' && ['normal-pendulum', 'effect-pendulum', 'ritual-pendulum', 'fusion-pendulum', 'synchro-pendulum'].includes(form.data.pendulumType))" label="星级">
-              <el-input-number
-                v-model="form.data.level"
-                :min="0"
-                :max="13"
-                :precision="0"
-              />
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="种族">
-              <el-input v-model="form.data.monsterType" placeholder="请输入种族" />
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="MAX">
-              <el-input-number
-                v-model="form.data.maximumAtk"
-                :min="0"
-                :max="9999"
-                :precision="0"
-              />
-              <span class="tip">（MAXIMUM ATK）</span>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="ATK">
-              <el-input-number
-                v-model="form.data.atk"
-                :min="-1"
-                :max="9999"
-                :precision="0"
-              />
-              <span class="tip">（?：-1）</span>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="DEF">
-              <el-input-number
-                v-model="form.data.def"
-                :min="-1"
-                :max="9999"
-                :precision="0"
-              />
-              <span class="tip">（?：-1）</span>
-            </el-form-item>
-            <el-form-item label="效果">
-              <el-row :gutter="gutter">
-                <el-col :span="12">
-                  <el-switch v-model="form.data.firstLineCompress" active-text="首行压缩" />
-                </el-col>
-                <el-col :span="12">
-                  <el-switch v-model="form.data.descriptionAlign" active-text="文本居中" />
-                </el-col>
-              </el-row>
-              <el-input
-                v-model="form.data.description"
-                style="margin-top: 10px"
-                type="textarea"
-                :autosize="{minRows: 3}"
-                placeholder="请输入效果"
-              />
-            </el-form-item>
-            <el-form-item label="字号">
-              <el-slider
-                v-model="form.data.descriptionZoom"
-                :min="0.5"
-                :max="1.5"
-                :step="0.02"
-                :marks="descriptionZoomMarks"
-              />
-            </el-form-item>
-            <el-form-item label="卡包">
-              <el-input v-model="form.data.package" placeholder="请输入卡包" />
-            </el-form-item>
-            <el-form-item label="密码">
-              <el-input v-model="form.data.password" placeholder="请输入密码" />
-            </el-form-item>
-            <el-form-item label="罕贵">
-              <el-select
-                v-model="form.data.rare"
-                placeholder="请选择罕贵"
-                clearable
-              >
-                <el-option label="SR" value="sr" />
-                <el-option label="RR" value="rr" />
-                <el-option label="PSER" value="pser" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="角标">
-              <el-select
-                v-model="form.data.laser"
-                placeholder="请选择角标"
-                clearable
-              >
-                <el-option label="样式一" value="laser1" />
-                <el-option label="样式二" value="laser2" />
-                <el-option label="样式三" value="laser3" />
-                <el-option label="样式四" value="laser4" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="    ">
-              <el-row :gutter="gutter">
-                <el-col :span="12">
-                  <el-switch v-model="form.data.radius" active-text="圆角"/>
-                </el-col>
-                <el-col :span="12">
-                  <el-switch v-model="form.data.legend" active-text="传说"/>
-                </el-col>
-              </el-row>
-            </el-form-item>
-            <el-form-item label="缩放">
-              <el-slider
-                v-model="form.data.scale"
-                :min="0.1"
-                :max="1"
-                :step="0.1"
-              />
-            </el-form-item>
+                  <div style="height: 600px;">
+                    <vue-cropper
+                      ref="cropper"
+                      :img="CropperDialog.image"
+                      :can-scale="false"
+                      :auto-crop="true"
+                      :auto-crop-width="9999"
+                      :auto-crop-height="9999"
+                      :fixed="true"
+                      :fixed-number="CropperDialog.fixedNumber"
+                      :can-move-box="true"
+                      :center-box="true"
+                    />
+                  </div>
+                  <template #footer>
+                    <el-button @click="CropperDialog.show = false">取消</el-button>
+                    <el-button type="primary" @click="confirmCrop">确定</el-button>
+                  </template>
+                </el-dialog>
+
+              </div>
+            </div>
           </div>
-
-          <div v-if="form.card === 'yugioh-back' && form.ui === true">
-            <el-form-item label="类型">
-              <el-select
-                v-model="form.data.type"
-                placeholder="请选择类型"
-              >
-                <el-option label="通常" value="normal" />
-                <el-option label="巨神兵" value="tormentor" />
-                <el-option label="天空龙" value="sky-dragon" />
-                <el-option label="翼神龙" value="winged-dragon" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="标志">
-              <el-select
-                v-model="form.data.logo"
-                placeholder="请选择标志"
-                clearable
-              >
-                <el-option label="OCG" value="ocg" />
-                <el-option label="TCG" value="tcg" />
-                <el-option label="RD" value="rd" />
-              </el-select>
-            </el-form-item>
-            <el-row :gutter="gutter">
-              <el-col :span="8">
-                <el-form-item label="圆角">
-                  <el-switch v-model="form.data.radius" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="K标">
-                  <el-switch v-model="form.data.konami" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="R标">
-                  <el-switch v-model="form.data.register" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-form-item label="缩放">
-              <el-slider
-                v-model="form.data.scale"
-                :min="0.1"
-                :max="1"
-                :step="0.1"
-              />
-            </el-form-item>
-          </div>
-
-          <div v-if="form.card === 'field-center' && form.ui === true">
-            <el-form-item label="图片">
-              <el-space :size="10">
-                <el-upload
-                  action="/"
-                  :show-file-list="false"
-                  accept="image/*"
-                  :before-upload="beforeUploadCenter"
-                >
-                  <el-button type="primary">选择图片</el-button>
-                </el-upload>
-                <el-button plain @click="deleteImage">删除</el-button>
-              </el-space>
-            </el-form-item>
-            <el-row :gutter="gutter">
-              <el-col :span="12">
-                <el-form-item label="圆角">
-                  <el-switch v-model="form.data.radius" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="卡背">
-                  <el-switch v-model="form.data.cardBack" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-form-item label="缩放">
-              <el-slider
-                v-model="form.data.scale"
-                :min="0.1"
-                :max="1"
-                :step="0.1"
-              />
-            </el-form-item>
-          </div>
-
-          <div v-if="form.card === 'yugioh-series-2' && form.ui === true">
-            <el-form-item label="卡名">
-              <el-input v-model="form.data.name" placeholder="请输入卡名" />
-            </el-form-item>
-            <el-form-item label="对齐">
-              <el-radio-group v-model="form.data.align">
-                <el-radio-button label="left">
-                  <i class="fa-solid fa-align-left" />
-                </el-radio-button>
-                <el-radio-button label="center">
-                  <i class="fa-solid fa-align-center" />
-                </el-radio-button>
-                <el-radio-button label="right">
-                  <i class="fa-solid fa-align-right" />
-                </el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="类型">
-              <el-radio-group v-model="form.data.type">
-               <el-radio-button label="monster">怪兽</el-radio-button>
-                <el-radio-button label="spell">魔法</el-radio-button>
-                <el-radio-button label="trap">陷阱</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="属性">
-              <el-radio-group v-model="form.data.attribute" class="attribute-radio-group">
-                <el-radio-button label="dark">暗</el-radio-button>
-                <el-radio-button label="light">光</el-radio-button>
-                <el-radio-button label="earth">地</el-radio-button>
-                <el-radio-button label="water">水</el-radio-button>
-                <el-radio-button label="fire">炎</el-radio-button>
-                <el-radio-button label="wind">风</el-radio-button>
-                <el-radio-button label="divine">神</el-radio-button>
-                <el-radio-button label="">无</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item v-if="['spell','trap'].includes(form.data.type)" label="图标">
-              <el-select v-model="form.data.icon" placeholder="请选择图标" clearable>
-                <el-option label="装备" value="equip" />
-                <el-option label="场地" value="filed" />
-                <el-option label="速攻" value="quick-play" />
-                <el-option label="仪式" value="ritual" />
-                <el-option label="永续" value="continuous" />
-                <el-option label="反击" value="counter" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="图片">
-              <el-space :size="10">
-                <el-upload
-                  action="/"
-                  :show-file-list="false"
-                  accept="image/*"
-                  :before-upload="beforeUploadCard"
-                >
-                  <el-button type="primary">选择图片</el-button>
-                </el-upload>
-                <el-button plain @click="deleteImage">删除</el-button>
-              </el-space>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="卡类">
-              <el-select v-model="form.data.cardType" placeholder="请选择卡类">
-                <el-option label="通常" value="normal" />
-                <el-option label="效果" value="effect" />
-                <el-option label="仪式" value="ritual" />
-                <el-option label="融合" value="fusion" />
-                <el-option label="巨神兵" value="tormentor" />
-                <el-option label="天空龙" value="sky-dragon" />
-                <el-option label="翼神龙" value="winged-dragon" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="星级">
-              <el-input-number
-                v-model="form.data.level"
-                :min="0"
-                :max="12"
-                :precision="0"
-              />
-            </el-form-item>
-            <el-form-item v-if="['monster','pendulum'].includes(form.data.type)" label="种族">
-              <el-input v-model="form.data.monsterType" placeholder="请输入种族" />
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="ATK">
-              <el-input-number
-                v-model="form.data.atk"
-                :min="-2"
-                :max="9999"
-                :precision="0"
-              />
-              <span class="tip">（?：-1，∞：-2）</span>
-            </el-form-item>
-            <el-form-item v-if="form.data.type === 'monster'" label="DEF">
-              <el-input-number
-              v-model="form.data.def"
-                :min="-2"
-                :max="9999"
-                :precision="0"
-              />
-              <span class="tip">（?：-1，∞：-2）</span>
-            </el-form-item>
-            <el-form-item label="效果">
-              <el-row :gutter="gutter">
-                <el-col :span="12">
-                  <el-switch v-model="form.data.firstLineCompress" active-text="首行压缩" />
-                </el-col>
-                <el-col :span="12">
-                  <el-switch v-model="form.data.descriptionAlign" active-text="文本居中" />
-                </el-col>
-              </el-row>
-              <el-input
-                v-model="form.data.description"
-                style="margin-top: 10px"
-                type="textarea"
-                :autosize="{minRows: 3}"
-                placeholder="请输入效果"
-              />
-            </el-form-item>
-            <el-form-item label="字号">
-              <el-slider
-                v-model="form.data.descriptionZoom"
-                :min="0.5"
-                :max="1.5"
-                :step="0.02"
-                :marks="descriptionZoomMarks"
-              />
-            </el-form-item>
-            <el-form-item label="卡包">
-              <el-input v-model="form.data.package" placeholder="请输入卡包" />
-            </el-form-item>
-            <el-form-item label="密码">
-                <el-input v-model="form.data.password" placeholder="请输入密码" />
-            </el-form-item>
-            <el-form-item label="版权">
-              <el-select
-                v-model="form.data.copyright"
-                placeholder="请选择版权"
-                clearable
-                fit-input-width
-              >
-                <el-option label="©スタジオ・ダイス/集英社・テレビ東京・KONAMI" value="jp" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="角标">
-              <el-select
-                v-model="form.data.laser"
-                placeholder="请选择角标"
-                clearable
-              >
-                <el-option label="样式一" value="laser1" />
-                <el-option label="样式二" value="laser2" />
-                <el-option label="样式三" value="laser3" />
-                <el-option label="样式四" value="laser4" />
-              </el-select>
-            </el-form-item>
-            <el-row :gutter="gutter">
-              <el-col :span="12">
-                <el-form-item label="圆角">
-                  <el-switch v-model="form.data.radius" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="20th">
-                  <el-switch v-model="form.data.twentieth" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-form-item label="缩放">
-              <el-slider
-                v-model="form.data.scale"
-                :min="0.1"
-                :max="1"
-                :step="0.1"
-             />
-            </el-form-item>
-          </div>
-
-          <el-form-item v-if="form.ui === false" label="数据">
-            <json-editor-vue
-              v-model="jsonData"
-              style="width: 100%"
-              mode="text"
-              v-bind="jsonOption"
-            />
-          </el-form-item>
-        </el-form>
-
-        <div class="button-group">
-          <el-row :gutter="gutter">
-              <el-col :span="12">
-                <el-upload
-                  action="/"
-                  :show-file-list="false"
-                  accept="application/json"
-                  :before-upload="importJson"
-                >
-                  <el-button plain>导入数据</el-button>
-                </el-upload>
-              </el-col>
-              <el-col :span="12">
-                <el-button plain @click="exportJson">导出数据</el-button>
-              </el-col>
-            <el-button type="primary" @click="exportImage">导出图片</el-button>
-          </el-row>
-        </div>
-
-        <el-dialog
-          v-model="CropperDialog.show"
-          title="图片裁切"
-          :width="800"
-          :close-on-click-modal="false"
-          :close-on-press-escape="false"
-          :show-close="false"
-        >
-          <div style="height: 600px;">
-            <vue-cropper
-              ref="cropper"
-              :img="CropperDialog.image"
-              :can-scale="false"
-              :auto-crop="true"
-              :auto-crop-width="9999"
-              :auto-crop-height="9999"
-              :fixed="true"
-              :fixed-number="CropperDialog.fixedNumber"
-              :can-move-box="true"
-              :center-box="true"
-            />
-          </div>
-          <template #footer>
-            <el-button @click="CropperDialog.show = false">取消</el-button>
-            <el-button type="primary" @click="confirmCrop">确定</el-button>
-          </template>
-        </el-dialog>
-
-      </div>
-    </div>
+        </el-aside>
+      </el-container>
+    </el-container>
   </div>
 </template>
 
 <script setup>
 import { Icon } from '@iconify/vue';
-import { onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue';
+import { onBeforeUnmount, onMounted, onUnmounted, reactive, ref, shallowRef, watch } from 'vue';
 import { FieldCenterCard, RushDuelCard, YugiohBackCard, YugiohCard, YugiohSeries2Card } from 'yugioh-card';
 import JsonEditorVue from 'json-editor-vue';
 import { ElMessage } from 'element-plus';
@@ -826,6 +846,80 @@ import yugioh_kr from '@/assets/default/yugioh/kr';
 import yugioh_en from '@/assets/default/yugioh/en';
 import yugioh_astral from '@/assets/default/yugioh/astral';
 import yugiohSeries2 from '@/assets/default/yugioh-series-2';
+
+const showSidebar = ref(true)
+const windowWidth = ref(window.innerWidth)
+
+// 配置项
+const SIDEBAR_CONFIG = {
+  MAX_WIDTH: 500,        // 最大宽度
+  MIN_SCALE_WIDTH: 400,  // 开始缩放的最小宽度
+  MIN_CONTENT_WIDTH: 320, // 内容最小宽度（保证可用性）
+}
+
+// 计算侧边栏宽度
+const asideWidth = computed(() => {
+  if (!showSidebar.value) return '0px'
+  
+  const width = windowWidth.value
+  
+  // 1. 窗口宽度 >= 最大宽度：使用最大宽度
+  if (width >= SIDEBAR_CONFIG.MAX_WIDTH) {
+    return `${SIDEBAR_CONFIG.MAX_WIDTH}px`
+  }
+  
+  // 2. 窗口宽度 < 最大宽度：占满窗口
+  return `${width}px`
+})
+
+// 计算缩放比例
+const asideScale = computed(() => {
+  const width = windowWidth.value
+  
+  // 如果窗口宽度 >= 最大宽度，不缩放
+  if (width >= SIDEBAR_CONFIG.MAX_WIDTH) return 1
+  
+  // 如果窗口宽度 >= 最小内容宽度，按比例缩放
+  if (width >= SIDEBAR_CONFIG.MIN_CONTENT_WIDTH) {
+    return width / SIDEBAR_CONFIG.MAX_WIDTH
+  }
+  
+  // 如果窗口宽度太小，使用最小缩放比例
+  return SIDEBAR_CONFIG.MIN_CONTENT_WIDTH / SIDEBAR_CONFIG.MAX_WIDTH
+})
+
+// 内容容器样式
+const asideContainerStyle = computed(() => {
+  const scale = asideScale.value
+  
+  if (scale < 1) {
+    return {
+      transform: `scale(${scale})`,
+      transformOrigin: 'top left',
+      width: `${SIDEBAR_CONFIG.MAX_WIDTH}px`,
+      height: `${100 / scale}%`,
+      overflow: 'hidden',
+    }
+  }
+  
+  return {
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+  }
+})
+
+// 判断是否需要特殊处理（小屏幕）
+const isSmallScreen = computed(() => {
+  return windowWidth.value < SIDEBAR_CONFIG.MAX_WIDTH
+})
+
+// 侧边栏样式
+const asideStyle = computed(() => ({
+  width: asideWidth.value,
+  transition: 'width 0.3s',
+  overflow: 'hidden',
+}))
 
 const card = ref(null);
 const cardLeaf = shallowRef(null);
@@ -1038,13 +1132,52 @@ watch(() => jsonData.value, () => {
 });
 
 const toGithub = () => {
-  open('https://github.com/kooriookami/yugioh-card');
+  open('https://github.com/Eicnaid/yugioh-card');
 };
 </script>
 
 <style lang="scss" scoped>
-.yugioh-card-container {
+
+.common-layout {
   height: 100vh;
+  overflow: hidden;
+}
+
+.page-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  flex-shrink: 0;  // 不允许收缩
+  height: 60px !important;  // 固定高度
+  border-bottom: 1px solid var(--el-border-color);
+  display: flex;
+  align-items: center;
+  background: var(--el-bg-color);  // 添加背景色防止内容穿透
+  z-index: 10;  // 确保在内容上方
+}
+
+.main-container {
+  flex: 1;  // 占据剩余空间
+  overflow: hidden;  // 防止整体滚动
+  height: 0;  // flex 布局关键，配合 flex: 1 使用
+}
+
+.main-content {
+  overflow: hidden;
+  padding: 0;
+  height: 100%;
+}
+
+.aside-panel {
+  height: 100%;
+  overflow: hidden;
+}
+
+.yugioh-card-container {
+  height: 100%;
   display: flex;
   overflow: hidden;
 
@@ -1064,7 +1197,7 @@ const toGithub = () => {
   .form {
     height: 100%;
     overflow: auto;
-    width: 600px;
+    width: 100%;
     flex-shrink: 0;
     border-left: 1px solid var(--border-color);
 
@@ -1095,6 +1228,7 @@ const toGithub = () => {
 
     .form-main {
       padding: 20px;
+      padding-bottom: 20px;
 
       .arrow-form {
         width: 130px;
